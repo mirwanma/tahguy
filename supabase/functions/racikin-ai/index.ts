@@ -32,8 +32,23 @@ class UserError extends Error {
 }
 
 // ---------- Gemini ----------
-const GEMINI_MODELS = [Deno.env.get("GEMINI_MODEL") ?? "gemini-3.8-flash", "gemini-3.6-flash"];
+// gemini-3.6-flash dipilih karena jauh lebih cepat & stabil dari 3.8-flash (hasil uji: ~2 dtk vs 7-27 dtk).
+const GEMINI_MODELS = [...new Set([Deno.env.get("GEMINI_MODEL") ?? "gemini-3.6-flash", "gemini-3.5-flash-lite"])];
+// Batas waktu Edge Function Supabase ~150 dtk: tiap percobaan maks 60 dtk, total semua percobaan maks 130 dtk.
+const GEMINI_TIMEOUT_MS = 60_000;
+const GEMINI_TOTAL_MS = 130_000;
 const THINKING: Record<TaskDef["effort"], string> = { low: "LOW", medium: "MEDIUM", high: "HIGH" };
+
+function geminiFetch(model: string, apiKey: string, body: string, deadline: number) {
+  const left = deadline - Date.now();
+  if (left < 3000) throw new Error("deadline");
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body,
+    signal: AbortSignal.timeout(Math.min(GEMINI_TIMEOUT_MS, left)),
+  });
+}
 
 async function callGemini(apiKey: string, def: TaskDef, userText: string): Promise<unknown> {
   const body = JSON.stringify({
@@ -47,24 +62,42 @@ async function callGemini(apiKey: string, def: TaskDef, userText: string): Promi
     },
   });
 
-  // Coba model utama; kalau model tidak ditemukan (404), pakai model cadangan.
-  for (const [i, model] of [...new Set(GEMINI_MODELS)].entries()) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body,
-    });
-    if (res.status === 404 && i < GEMINI_MODELS.length - 1) {
-      console.warn(`Model ${model} tidak ditemukan, coba cadangan`);
+  // Coba model utama; kalau gagal (404/5xx/timeout), pakai model cadangan.
+  const deadline = Date.now() + GEMINI_TOTAL_MS;
+  for (const [i, model] of GEMINI_MODELS.entries()) {
+    const t0 = Date.now();
+    const isLast = i === GEMINI_MODELS.length - 1;
+    let res: Response;
+    try {
+      res = await geminiFetch(model, apiKey, body, deadline);
+      // Google kadang balas 503 "high demand" sesaat: coba sekali lagi sebelum pindah model.
+      if (res.status === 503 || res.status === 500) {
+        console.warn(`Model ${model} ${res.status}, retry sekali`);
+        await res.body?.cancel();
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await geminiFetch(model, apiKey, body, deadline);
+      }
+    } catch (err) {
+      console.warn(JSON.stringify({ gemini: model, error: String(err), ms: Date.now() - t0 }));
+      if (!isLast) continue; // timeout / jaringan -> coba model cadangan
+      throw new UserError("AI lagi lambat banget, coba lagi sebentar ya.", 504);
+    }
+    // 404 (model tidak ada), 429 (kuota per-model habis, mis. free tier 5 req/menit) dan 5xx -> coba model cadangan.
+    if ((res.status === 404 || res.status === 429 || res.status >= 500) && !isLast) {
+      console.warn(`Model ${model} gagal (${res.status}), coba cadangan`);
+      await res.body?.cancel();
       continue;
     }
     const data = await res.json().catch(() => ({}));
+    console.log(JSON.stringify({ gemini: model, status: res.status, ms: Date.now() - t0, usage: data.usageMetadata ?? null, version: data.modelVersion ?? null }));
     if (!res.ok) {
       console.error("Gemini API error", res.status, JSON.stringify(data).slice(0, 500));
-      if (res.status === 429) throw new UserError("AI lagi sibuk / kuota habis, coba sebentar lagi.", 429);
-      if (res.status === 400 || res.status === 401 || res.status === 403) {
+      if (res.status === 429) throw new UserError("Kuota AI lagi penuh (batas per menit). Tunggu ±1 menit lalu coba lagi ya.", 429);
+      if (res.status === 503) throw new UserError("Server Gemini lagi rame banget. Coba lagi sebentar ya.", 503);
+      if (res.status === 401 || res.status === 403 || /API_KEY/i.test(JSON.stringify(data))) {
         throw new UserError("API key Gemini ditolak. Cek secret GEMINI_API_KEY di Supabase.", 502);
       }
+      if (res.status === 400) throw new UserError("Permintaan ke AI ditolak (400). Cek log function.", 502);
       throw new UserError("Gagal menghubungi AI.", 502);
     }
 

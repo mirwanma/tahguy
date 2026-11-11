@@ -53,15 +53,16 @@ export const TASKS: Record<string, TaskDef> = {
 
   generate_rab: {
     effort: "medium",
-    instruction: `Susun RAB (Rencana Anggaran Biaya) modal awal untuk bisnis user. Kelompokkan per kategori: Peralatan, Bahan Baku Awal, Tempat, Perizinan, Branding & Kemasan, Marketing Launching, Dana Darurat. Tandai prioritas "wajib" atau "opsional". Usahakan total item wajib tidak melebihi modal user; kalau tidak mungkin, jelaskan di ringkasan. Jika input.mode = "hemat", pilih opsi paling hemat (bekas, sewa, DIY). Sertakan juga biaya operasional bulanan (sewa, gas, listrik, gaji, dll) dan 3-5 tips hemat.`,
+    instruction: `Susun RAB (Rencana Anggaran Biaya) modal awal untuk bisnis user. Kelompokkan per kategori: Peralatan, Bahan Baku Awal, Tempat, Perizinan, Branding & Kemasan, Marketing Launching, Dana Darurat. Tandai prioritas "wajib" atau "opsional". Usahakan total item wajib tidak melebihi modal user; kalau tidak mungkin, jelaskan di ringkasan. Jika input.mode = "hemat", pilih opsi paling hemat (bekas, sewa, DIY). Sertakan juga biaya operasional bulanan (sewa, gas, listrik, gaji, dll) dan 3-5 tips hemat.
+PENTING: field "harga" adalah harga SATUAN (untuk 1 satuan), aplikasi akan menghitung subtotal = qty x harga. Contoh benar: 200 paper bowl @ Rp2.000 -> qty 200, satuan "pcs", harga 2000 (BUKAN 400000). Kalau item dibeli borongan sebagai satu paket, pakai qty 1 dan satuan "paket". Pastikan angka di ringkasan sama dengan jumlah qty x harga item wajib.`,
     schema: obj({
       ringkasan: str(),
       items: arr(obj({
         kategori: str(),
         item: str(),
-        qty: num(),
+        qty: num("jumlah unit yang dibeli"),
         satuan: str(),
-        harga: num("harga satuan Rupiah"),
+        harga: num("harga untuk 1 satuan saja (BUKAN total). Subtotal = qty x harga"),
         prioritas: en(["wajib", "opsional"]),
         catatan: str(),
       })),

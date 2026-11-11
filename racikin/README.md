@@ -27,7 +27,9 @@ Buka http://localhost:8000/racikin/. Defaultnya **Mode Demo** (hasil dari templa
 App otomatis pakai server ini saat **Setelan → AI Online**.
 
 Provider dipilih otomatis dari secret di Supabase Dashboard → Project `racikin` → Edge Functions → Secrets:
-- `GEMINI_API_KEY` (atau `GOOGLE_API_KEY`) → **Google Gemini** (utama). Model default `gemini-3.8-flash`, otomatis turun ke `gemini-3.6-flash` kalau model utama tidak tersedia. Ganti lewat secret `GEMINI_MODEL`.
+- `GEMINI_API_KEY` (atau `GOOGLE_API_KEY`) → **Google Gemini** (utama). Model default `gemini-3.6-flash`; kalau kena limit (429), error 5xx, atau timeout, otomatis pindah ke `gemini-3.5-flash-lite`. Ganti model utama lewat secret `GEMINI_MODEL`.
+  - Kenapa bukan `gemini-3.8-flash`? Hasil uji: 3.8 butuh 7–27 dtk untuk tugas kecil (bahkan >150 dtk untuk tugas besar), 3.6 cuma ~2 dtk.
+  - **Free tier Gemini dibatasi ±5 request/menit per model.** Untuk dipakai banyak user, aktifkan billing di Google AI Studio.
 - `ANTHROPIC_API_KEY` → Claude (dipakai hanya kalau secret Gemini tidak ada).
 
 Deploy ulang / ke project lain:
