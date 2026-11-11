@@ -23,6 +23,11 @@ python3 -m http.server 8000
 Buka http://localhost:8000/racikin/. Defaultnya **Mode Demo** (hasil dari template lokal, tanpa AI).
 
 ## Nyalain AI beneran (Claude via Supabase)
+**Sudah di-deploy** ke project Supabase `racikin` (`ujdxslztjcufidhqpmcd`, region Singapore).
+App otomatis pakai server ini saat **Setelan → AI Online**. Yang masih perlu: isi secret `ANTHROPIC_API_KEY`
+di Supabase Dashboard → Project `racikin` → Edge Functions → Secrets.
+
+Deploy ulang / ke project lain:
 1. Bikin project di [supabase.com](https://supabase.com), install [Supabase CLI](https://supabase.com/docs/guides/cli).
 2. Dari root repo:
 
@@ -38,7 +43,7 @@ supabase secrets set ANTHROPIC_API_KEY=<api-key-kamu>
 supabase functions deploy racikin-ai
 ```
 
-3. Di app → **Setelan** → pilih **AI Online**, isi URL `https://<project-ref>.supabase.co/functions/v1/racikin-ai` dan anon/publishable key project.
+3. Di app → **Setelan** → **AI Online** → buka "Server custom", isi URL `https://<project-ref>.supabase.co/functions/v1/racikin-ai` dan anon key (legacy JWT) project.
 
 Opsional (secret di Supabase): `RACIKIN_MODEL` (default `claude-opus-5-5`), `RACIKIN_ALLOWED_ORIGIN` (default `*`, isi domain app kamu biar lebih aman).
 

@@ -14,11 +14,14 @@ export const setelan = {
           <label><input type="radio" name="aiMode" value="demo" ${st.aiMode !== "online" ? "checked" : ""}><span>Demo (offline)</span></label>
           <label><input type="radio" name="aiMode" value="online" ${st.aiMode === "online" ? "checked" : ""}><span>AI Online</span></label>
         </div>
-        <p class="muted small">Mode Demo pakai template lokal, buat coba-coba. Mode Online pakai Claude lewat Supabase Edge Function <code>racikin-ai</code>, jadi hasilnya beneran dipersonalisasi.</p>
+        <p class="muted small">Mode Demo pakai template lokal, buat coba-coba. Mode Online pakai Claude lewat server Racikin, jadi hasilnya beneran dipersonalisasi.</p>
+        <details><summary class="muted small">Server custom (opsional)</summary>
+        <p class="muted small">Kosongin buat pakai server Racikin bawaan.</p>
         <label class="field"><span>URL Edge Function</span>
           <input name="endpoint" type="url" value="${esc(st.endpoint)}" placeholder="https://xxxx.supabase.co/functions/v1/racikin-ai"></label>
         <label class="field"><span>Supabase anon / publishable key</span>
-          <input name="anonKey" value="${esc(st.anonKey)}" placeholder="eyJhbGciOi… / sb_publishable_…"></label>
+          <input name="anonKey" value="${esc(st.anonKey)}" placeholder="eyJhbGciOi…"></label>
+        </details>
         <button class="btn primary">Simpan</button>
       </form>
 
@@ -38,10 +41,6 @@ export const setelan = {
     ai(form) {
       const fd = new FormData(form);
       const settings = { aiMode: fd.get("aiMode"), endpoint: fd.get("endpoint").trim(), anonKey: fd.get("anonKey").trim() };
-      if (settings.aiMode === "online" && !settings.endpoint) {
-        toast("Isi URL Edge Function dulu buat mode online", "err");
-        return;
-      }
       store.set({ settings });
       toast("Setelan disimpan ✅");
       render();

@@ -8,7 +8,14 @@ const MODEL = Deno.env.get("RACIKIN_MODEL") ?? "claude-opus-5-5";
 const ALLOWED_ORIGIN = Deno.env.get("RACIKIN_ALLOWED_ORIGIN") ?? "*";
 const MAX_INPUT_CHARS = 20_000;
 
-const client = new Anthropic(); // baca ANTHROPIC_API_KEY dari env
+// Dibaca saat request (bukan saat boot) supaya secret yang baru di-set langsung terpakai.
+let client: Anthropic | null = null;
+function getClient() {
+  const key = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!key) return null;
+  client ??= new Anthropic({ apiKey: key });
+  return client;
+}
 
 const cors = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -26,6 +33,10 @@ function json(body: unknown, status = 200) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  const anthropic = getClient();
+  if (!anthropic) {
+    return json({ error: "Server AI belum siap: secret ANTHROPIC_API_KEY belum di-set di Supabase." }, 503);
+  }
 
   let body: { task?: string; profile?: unknown; input?: unknown };
   try {
@@ -64,7 +75,7 @@ Deno.serve(async (req) => {
         },
       ],
     };
-    const response = await client.beta.messages.create(params);
+    const response = await anthropic.beta.messages.create(params);
 
     if (response.stop_reason === "refusal") {
       return json({ error: "AI tidak bisa memproses permintaan ini. Coba ubah kata-katanya ya." }, 422);
