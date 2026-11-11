@@ -21,3 +21,9 @@ Di akhir: rapor, kartu #TahguyMoment, dan tabel "Catatan untuk tim" yang memetak
 
 ## Menjalankan
 Buka `index.html` di browser, atau aktifkan GitHub Pages (Settings → Pages → branch `main`, folder `/root`).
+
+---
+
+## Racikin (aplikasi)
+PWA co-founder AI untuk usaha F&B ada di folder [`racikin/`](racikin/) — lihat [`racikin/README.md`](racikin/README.md) dan PRD di [`docs/PRD.md`](docs/PRD.md).
+Kalau GitHub Pages aktif: `https://<user>.github.io/tahguy/racikin/`.
