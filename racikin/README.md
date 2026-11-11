@@ -22,10 +22,13 @@ python3 -m http.server 8000
 
 Buka http://localhost:8000/racikin/. Defaultnya **Mode Demo** (hasil dari template lokal, tanpa AI).
 
-## Nyalain AI beneran (Claude via Supabase)
+## Nyalain AI beneran (Gemini via Supabase)
 **Sudah di-deploy** ke project Supabase `racikin` (`ujdxslztjcufidhqpmcd`, region Singapore).
-App otomatis pakai server ini saat **Setelan → AI Online**. Yang masih perlu: isi secret `ANTHROPIC_API_KEY`
-di Supabase Dashboard → Project `racikin` → Edge Functions → Secrets.
+App otomatis pakai server ini saat **Setelan → AI Online**.
+
+Provider dipilih otomatis dari secret di Supabase Dashboard → Project `racikin` → Edge Functions → Secrets:
+- `GEMINI_API_KEY` (atau `GOOGLE_API_KEY`) → **Google Gemini** (utama). Model default `gemini-3.8-flash`, otomatis turun ke `gemini-3.6-flash` kalau model utama tidak tersedia. Ganti lewat secret `GEMINI_MODEL`.
+- `ANTHROPIC_API_KEY` → Claude (dipakai hanya kalau secret Gemini tidak ada).
 
 Deploy ulang / ke project lain:
 1. Bikin project di [supabase.com](https://supabase.com), install [Supabase CLI](https://supabase.com/docs/guides/cli).
@@ -36,7 +39,7 @@ supabase link --project-ref <project-ref>
 ```
 
 ```bash
-supabase secrets set ANTHROPIC_API_KEY=<api-key-kamu>
+supabase secrets set GEMINI_API_KEY=<api-key-kamu>
 ```
 
 ```bash
@@ -45,7 +48,7 @@ supabase functions deploy racikin-ai
 
 3. Di app → **Setelan** → **AI Online** → buka "Server custom", isi URL `https://<project-ref>.supabase.co/functions/v1/racikin-ai` dan anon key (legacy JWT) project.
 
-Opsional (secret di Supabase): `RACIKIN_MODEL` (default `claude-opus-5-5`), `RACIKIN_ALLOWED_ORIGIN` (default `*`, isi domain app kamu biar lebih aman).
+Opsional (secret di Supabase): `GEMINI_MODEL`, `RACIKIN_MODEL` (model Claude, default `claude-opus-5-5`), `RACIKIN_ALLOWED_ORIGIN` (default `*`, isi domain app kamu biar lebih aman).
 
 ## Struktur
 ```
@@ -58,7 +61,7 @@ racikin/
   js/demo.js       generator Mode Demo (shape = schema di tasks.ts)
   js/views/*.js    satu file per halaman
 supabase/functions/racikin-ai/
-  index.ts         endpoint → Claude API (structured outputs)
+  index.ts         endpoint → Gemini API / Claude API (output JSON ber-schema)
   tasks.ts         prompt + JSON schema tiap task
 ```
 

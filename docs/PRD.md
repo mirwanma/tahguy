@@ -51,7 +51,7 @@ Login & sync cloud multi-device, mode tim/karyawan, stok & resep, CRM/kartu stem
 
 ## 6. Arsitektur MVP
 - **Frontend**: PWA statis (HTML + CSS + JS modules, tanpa build) di folder `racikin/`, bisa di-host di GitHub Pages. Data disimpan di `localStorage` (offline-first).
-- **AI**: Supabase Edge Function `racikin-ai` → Claude API. Prompt & JSON schema tiap task disimpan **di server** (`supabase/functions/racikin-ai/tasks.ts`); klien cuma kirim `{task, profile, input}`. Output pakai *structured outputs* biar selalu JSON valid.
+- **AI**: Supabase Edge Function `racikin-ai` → Google Gemini API (Claude sebagai cadangan). Prompt & JSON schema tiap task disimpan **di server** (`supabase/functions/racikin-ai/tasks.ts`); klien cuma kirim `{task, profile, input}`. Output pakai *structured outputs* biar selalu JSON valid.
 - **Mode Demo**: tanpa backend, app tetap jalan pakai generator template lokal (buat coba-coba & demo ke orang).
 
 ### Kontrak task AI
